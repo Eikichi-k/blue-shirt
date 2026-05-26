@@ -142,6 +142,7 @@ Language: Respond ONLY in ${respondIn}. Keep under 150 words. No hashtags unless
         headers: {
           "Content-Type": "application/json",
           "anthropic-dangerous-direct-browser-access": "true",
+          "anthropic-version": "2023-06-01",
           "x-api-key": apiKey.trim(),
         },
         body: JSON.stringify({
