@@ -1,1 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Shirt — Random Acts of Digital Kindness</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0f1e; color: #e8edf5; font-family: Georgia, serif; }
+@keyframes floatShirt { 0% { transform: translateY(0px) rotate(-5deg); } 100% { transform: translateY(-20px) rotate(5deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.btn-main { background: linear-gradient(135deg, #1e90ff, #0066cc); border: none; color: white; padding: 16px 40px; font-size: 1rem; font-family: 'DM Sans', sans-serif; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s; width: 100%; }
+.btn-main:hover { background: linear-gradient(135deg, #3aa0ff, #1177dd); transform: translateY(-1px); }
+.btn-main:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); padding: 10px 24px; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+.btn-secondary:hover { border-color: rgba(255,255,255,0.5); color: white; }
+.chip { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(30,144,255,0.3); background: transparent; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; }
+.chip.active { background: rgba(30,144,255,0.2); border-color: #1e90ff; color: #7ec8ff; }
+.chip:hover { border-color: rgba(30,144,255,0.6); color: rgba(255,255,255,0.8); }
+textarea, .api-input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e8edf5; border-radius: 8px; padding: 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; line-height: 1.6; width: 100%; transition: border-color 0.2s; outline: none; }
+textarea { resize: vertical; }
+textarea:focus, .api-input:focus { border-color: rgba(30,144,255,0.5); }
+textarea::placeholder, .api-input::placeholder { color: rgba(255,255,255,0.2); }
+.response-box { background: rgba(30,144,255,0.06); border: 1px solid rgba(30,144,255,0.2); border-radius: 8px; padding: 20px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; line-height: 1.7; animation: fadeSlideIn 0.4s ease; white-space: pre-wrap; }
+.lang-toggle { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); padding: 6px 14px; font-size: 0.75rem; font-family: 'DM Sans', sans-serif; cursor: pointer; border-radius: 20px; transition: all 0.2s; letter-spacing: 0.04em; }
+.lang-toggle:hover { color: white; border-color: rgba(255,255,255,0.4); }
+.divider { height: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent); margin: 24px 0; }
+.loading-dot { animation: pulse 1.2s ease-in-out infinite; display: inline-block; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+.api-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 32px; }
+.api-label { font-size: 0.7rem; color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'DM Sans', sans-serif; margin-bottom: 8px; }
+.api-hint { font-size: 0.72rem; color: rgba(255,255,255,0.2); font-family: 'DM Sans', sans-serif; margin-top: 8px; line-height: 1.5; }
+.api-hint a { color: rgba(30,144,255,0.6); text-decoration: none; }
+.api-hint a:hover { color: #7ec8ff; }
+.api-saved { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #4caf50; font-family: 'DM Sans', sans-serif; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
 
+const T = {
+  en: {
+    title: "BLUE SHIRT", subtitle: "Random Acts of Digital Kindness",
+    tagline: "Paste a post from someone who needs help. Blue Shirt will respond.",
+    placeholder: "Paste a post, message, or describe someone's situation...\n\nExample: 'I've been struggling to find work for 6 months, feeling hopeless'\nExample: 'Just moved to LA and don't know anyone, feeling lonely'\nExample: '仕事でミスして上司に怒られた。もう辞めたい'",
+    button: "Help This Person", loading: "Blue Shirt is thinking...",
+    copyBtn: "Copy Response", copied: "Copied!", newBtn: "New Person to Help",
+    langToggle: "日本語", responseLabel: "Blue Shirt's Response:",
+    modeLabel: "Platform:", toneLabel: "Tone:",
+    modes: ["Threads / X", "Reddit", "Discord", "Direct Message"],
+    tones: ["Warm & Gentle", "Practical & Direct", "Playful & Light"],
+    footer: "Blue Shirt doesn't ask. Blue Shirt just helps.",
+    chars: "characters", detected: "Detected:",
+    apiLabel: "Your Anthropic API Key",
+    apiPlaceholder: "sk-ant-...",
+    apiHint: "Your key is stored only in your browser. Never sent anywhere except Anthropic. Get one at",
+    apiSaved: "Key saved",
+  },
+  ja: {
+    title: "ブルーシャツ", subtitle: "デジタルの世界の、ランダムな親切",
+    tagline: "助けが必要な人の投稿を貼ってください。Blue Shirtが返信します。",
+    placeholder: "投稿、メッセージ、または状況を貼り付けてください...\n\n例：「6ヶ月仕事が見つからない、もう希望がない」\n例：「LAに引っ越したばかりで知り合いがいない、孤独」\n例：\"Just failed my exam and I feel like giving up\"",
+    button: "この人を助ける", loading: "Blue Shirtが考えています...",
+    copyBtn: "コピー", copied: "コピーしました！", newBtn: "次の人を助ける",
+    langToggle: "English", responseLabel: "Blue Shirtの返信：",
+    modeLabel: "プラットフォーム：", toneLabel: "トーン：",
+    modes: ["Threads / X", "Reddit", "Discord", "ダイレクトメッセージ"],
+    tones: ["温かく優しく", "実用的にはっきり", "軽くポジティブに"],
+    footer: "Blue Shirtは頼まれない。ただ、助ける。",
+    chars: "文字", detected: "検出言語：",
+    apiLabel: "Anthropic APIキー",
+    apiPlaceholder: "sk-ant-...",
+    apiHint: "キーはブラウザにのみ保存されます。Anthropic以外には送信されません。取得先：",
+    apiSaved: "保存済み",
+  }
+};
+
+const SHIRTS = Array.from({length: 12}, () => ({
+  x: Math.random()*100, y: Math.random()*100,
+  size: 0.4+Math.random()*0.6, delay: Math.random()*4, dur: 6+Math.random()*4
+}));
+
+const platformDesc = [
+  "Threads or X (Twitter) public reply — casual, warm, brief",
+  "Reddit reply — more detailed, community-aware, supportive",
+  "Discord message — friendly, casual, peer-to-peer",
+  "Direct message — personal, private, more intimate and careful"
+];
+const toneDesc = [
+  "warm, gentle, emotionally supportive",
+  "practical, direct, action-oriented with empathy",
+  "light, uplifting, gently playful without dismissing the issue"
+];
+
+function App() {
+  const [lang, setLang] = useState("en");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("bs_api_key") || "");
+  const [input, setInput] = useState("");
+  const [mode, setMode] = useState(0);
+  const [tone, setTone] = useState(0);
+  const [response, setResponse] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [detLang, setDetLang] = useState("");
+  const [done, setDone] = useState(false);
+  const t = T[lang];
+
+  const detectLang = (text) => /[\u3040-\u30ff\u4e00-\u9fff]/.test(text) ? "Japanese / 日本語" : "English";
+
+  useEffect(() => {
+    setDetLang(input.length > 10 ? detectLang(input) : "");
+  }, [input]);
+
+  const handleApiKey = (val) => {
+    setApiKey(val);
+    if (val.startsWith("sk-ant-")) localStorage.setItem("bs_api_key", val);
+  };
+
+  const handleGenerate = async () => {
+    if (!input.trim() || !apiKey.trim()) return;
+    setLoading(true); setResponse(""); setDone(false);
+    const respondIn = detectLang(input) === "Japanese / 日本語" ? "Japanese" : "English";
+    const system = `You are Blue Shirt — a spontaneous, anonymous AI hero who roams the internet helping random strangers, inspired by the movie Free Guy. You don't wait to be asked. You just help.
+
+Personality: genuine, warm, never preachy. You notice what people really need. Never say "As an AI". Never give generic advice. Brief but impactful. Feel like a kind stranger. Sometimes end with a spark of hope or humor, never forced.
+
+Platform: ${platformDesc[mode]}
+Tone: ${toneDesc[tone]}
+Language: Respond ONLY in ${respondIn}. Keep under 150 words. No hashtags unless Threads/X. Don't start with "I".`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-api-key": apiKey.trim(),
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system,
+          messages: [{ role: "user", content: `Someone posted:\n\n"${input}"\n\nWrite a Blue Shirt response.` }]
+        })
+      });
+      if (!res.ok) throw new Error((await res.json())?.error?.message || `HTTP ${res.status}`);
+      const data = await res.json();
+      setResponse(data.content?.[0]?.text || "...");
+      setDone(true);
+    } catch(e) {
+      setResponse(`Error: ${e.message}`);
+      setDone(true);
+    } finally { setLoading(false); }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(response);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleReset = () => { setInput(""); setResponse(""); setDone(false); setDetLang(""); };
+
+  return (
+    <div style={{minHeight:"100vh", background:"#0a0f1e", color:"#e8edf5", position:"relative", overflow:"hidden"}}>
+      <div style={{position:"fixed", inset:0, pointerEvents:"none"}}>
+        {SHIRTS.map((s,i) => (
+          <div key={i} style={{position:"absolute", left:`${s.x}%`, top:`${s.y}%`, fontSize:`${s.size*2}rem`, opacity:0.04+s.size*0.04, animation:`floatShirt ${s.dur}s ease-in-out ${s.delay}s infinite alternate`, userSelect:"none", pointerEvents:"none"}}>👕</div>
+        ))}
+      </div>
+      <div style={{position:"fixed", top:"20%", left:"50%", transform:"translateX(-50%)", width:"600px", height:"600px", background:"radial-gradient(circle, rgba(30,144,255,0.06) 0%, transparent 70%)", pointerEvents:"none"}} />
+
+      <div style={{maxWidth:"640px", margin:"0 auto", padding:"48px 24px 80px", position:"relative", zIndex:1}}>
+        <div style={{marginBottom:"40px"}}>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"4px"}}>
+            <div style={{fontFamily:"'Bebas Neue', sans-serif", fontSize:"clamp(3rem,10vw,5rem)", letterSpacing:"0.05em", lineHeight:1, background:"linear-gradient(135deg,#fff 0%,#7ec8ff 50%,#1e90ff 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"}}>{t.title}</div>
+            <button className="lang-toggle" onClick={() => setLang(lang==="en"?"ja":"en")}>{t.langToggle}</button>
+          </div>
+          <div style={{fontFamily:"'DM Serif Display',serif", fontStyle:"italic", fontSize:"0.9rem", color:"rgba(255,255,255,0.35)", marginBottom:"16px"}}>{t.subtitle}</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif", fontSize:"0.85rem", color:"rgba(255,255,255,0.45)", lineHeight:1.5}}>{t.tagline}</div>
+        </div>
+
+        {/* API Key box */}
+        <div className="api-box">
+          <div className="api-label">{t.apiLabel}</div>
+          <input
+            className="api-input"
+            type="password"
+            value={apiKey}
+            onChange={e => handleApiKey(e.target.value)}
+            placeholder={t.apiPlaceholder}
+          />
+          {apiKey.startsWith("sk-ant-") ? (
+            <div className="api-saved">✓ {t.apiSaved}</div>
+          ) : (
+            <div className="api-hint">
+              {t.apiHint} <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+            </div>
+          )}
+        </div>
+
+        <div style={{marginBottom:"20px"}}>
+          <div style={{marginBottom:"12px"}}>
+            <div style={{fontSize:"0.7rem", color:"rgba(255,255,255,0.3)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"'DM Sans',sans-serif", marginBottom:"8px"}}>{t.modeLabel}</div>
+            <div style={{display:"flex", flexWrap:"wrap", gap:"8px"}}>
+              {t.modes.map((m,i) => <button key={i} className={`chip${mode===i?" active":""}`} onClick={() => setMode(i)}>{m}</button>)}
+            </div>
+          </div>
+          <div>
+            <div style={{fontSize:"0.7rem", color:"rgba(255,255,255,0.3)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"'DM Sans',sans-serif", marginBottom:"8px"}}>{t.toneLabel}</div>
+            <div style={{display:"flex", flexWrap:"wrap", gap:"8px"}}>
+              {t.tones.map((tn,i) => <button key={i} className={`chip${tone===i?" active":""}`} onClick={() => setTone(i)}>{tn}</button>)}
+            </div>
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        <div style={{marginBottom:"16px"}}>
+          <textarea rows={6} value={input} onChange={e => setInput(e.target.value)} placeholder={t.placeholder} />
+          <div style={{display:"flex", justifyContent:"space-between", marginTop:"6px", fontSize:"0.7rem", color:"rgba(255,255,255,0.2)", fontFamily:"'DM Sans',sans-serif"}}>
+            <span>{detLang ? `${t.detected} ${detLang}` : ""}</span>
+            <span>{input.length} {t.chars}</span>
+          </div>
+        </div>
+
+        {!done && (
+          <button className="btn-main" onClick={handleGenerate} disabled={loading || !input.trim() || !apiKey.startsWith("sk-ant-")}>
+            {loading ? <span><span className="loading-dot">·</span><span className="loading-dot">·</span><span className="loading-dot">·</span> {t.loading}</span> : t.button}
+          </button>
+        )}
+
+        {response && (
+          <div style={{marginTop:"24px", animation:"fadeSlideIn 0.4s ease"}}>
+            <div style={{fontSize:"0.7rem", color:"rgba(30,144,255,0.6)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"'DM Sans',sans-serif", marginBottom:"10px", display:"flex", alignItems:"center", gap:"8px"}}>
+              <span style={{width:"6px", height:"6px", borderRadius:"50%", background:"#1e90ff", display:"inline-block"}} />
+              {t.responseLabel}
+            </div>
+            <div className="response-box">{response}</div>
+            <div style={{display:"flex", gap:"12px", marginTop:"16px"}}>
+              <button className="btn-secondary" onClick={handleCopy}>{copied ? t.copied : t.copyBtn}</button>
+              <button className="btn-secondary" onClick={handleReset}>{t.newBtn}</button>
+            </div>
+          </div>
+        )}
+
+        <div style={{marginTop:"64px", textAlign:"center", fontFamily:"'DM Serif Display',serif", fontStyle:"italic", fontSize:"0.85rem", color:"rgba(255,255,255,0.15)"}}>{t.footer}</div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
