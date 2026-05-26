@@ -146,7 +146,7 @@ Language: Respond ONLY in ${respondIn}. Keep under 150 words. No hashtags unless
           "x-api-key": apiKey.trim(),
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-5",
           max_tokens: 1000,
           system,
           messages: [{ role: "user", content: `Someone posted:\n\n"${input}"\n\nWrite a Blue Shirt response.` }]
